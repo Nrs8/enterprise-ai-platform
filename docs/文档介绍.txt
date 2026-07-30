@@ -1,0 +1,29 @@
+docs/
+
+00_PROJECT_CONTEXT.md        # 项目永久上下文（几乎不变）
+
+01_ARCHITECTURE.md           # 整体系统架构
+
+02_CODING_STANDARD.md        # 编码规范
+
+03_DEVELOPMENT_WORKFLOW.md   # 开发流程
+
+04_ROADMAP.md                # 项目路线图
+
+05_CURRENT_SPRINT.md         # 当前 Sprint（唯一经常修改）
+
+06_CHANGELOG.md              # 版本更新记录
+
+07_PROJECT_STRUCTURE.md      # 项目目录说明
+
+08_TESTING_GUIDE.md          # 测试规范
+
+09_DEPENDENCIES.md           # 第三方依赖说明
+
+10_CONFIGURATION.md          # 配置说明
+
+11_GLOSSARY.md               # AI 架构术语
+
+12_DECISIONS.md              # Architecture Decision Record（ADR）
+
+diagrams/
