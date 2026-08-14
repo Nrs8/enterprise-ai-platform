@@ -34,6 +34,7 @@ class CalculatorTool(BaseTool):
         self,
         arguments: dict[str, Any],
     ) -> str:
+
         expression = arguments["expression"]
 
         result = eval(expression)

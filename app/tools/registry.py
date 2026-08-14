@@ -1,12 +1,21 @@
 """
 Tool registry implementation.
 """
-
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+# 获取logger实例
+logger = logging.getLogger(__name__)
+from app.observability.metrics import metrics
 from typing import Any
 
 from app.tools.base import BaseTool
 from app.tools.exceptions import ToolNotFoundError
-
+from app.resilience.retry import retry
+from app.resilience.timeout import timeout
 
 class ToolRegistry:
     """
@@ -39,9 +48,16 @@ class ToolRegistry:
         tool_name: str,
         arguments: dict[str, Any],
     ) -> str:
+        metrics.increment(
+            "tool_calls"
+        )
         tool = self.get(tool_name)
 
-        return await tool.execute(arguments)
+        return await retry(
+            timeout,
+            tool.execute,
+            arguments,
+        )
 
     def get_schemas(self) -> list[dict[str, Any]]:
         return [

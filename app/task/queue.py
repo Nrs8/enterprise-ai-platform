@@ -1,5 +1,7 @@
 import asyncio
 
+from app.task.models import Task
+
 
 class InMemoryTaskQueue:
     """
@@ -7,16 +9,22 @@ class InMemoryTaskQueue:
     """
 
     def __init__(self) -> None:
-        self._queue: asyncio.Queue[str] = asyncio.Queue()
+        self._queue: asyncio.Queue[Task] = asyncio.Queue()
+
 
     async def enqueue(
         self,
-        task_id: str,
+        task: Task,
     ) -> None:
-        await self._queue.put(task_id)
 
-    async def dequeue(self) -> str:
+        await self._queue.put(task)
+
+
+    async def dequeue(self) -> Task:
+
         return await self._queue.get()
 
+
     def task_done(self) -> None:
+
         self._queue.task_done()

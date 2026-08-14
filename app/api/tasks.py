@@ -1,86 +1,187 @@
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+"""
+Task API endpoints.
+"""
+
+
+import logging
+
+
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Request,
+)
+
+
 from pydantic import BaseModel
 
-from app.api.chat import (
-    session_manager,
+
+from app.task.container import (
+    task_queue,
     task_manager,
-    task_executor,
 )
 
 
-router = APIRouter(
-    prefix="/tasks",
-    tags=["tasks"],
-)
 
+logger = logging.getLogger(__name__)
+
+
+router = APIRouter()
+
+
+
+# =========================
+# API Models
+# =========================
 
 class TaskRequest(BaseModel):
+    """
+    Async task request.
+    """
+
     session_id: str | None = None
-    message: str
+
+    input: str
+
+    model: str = "qwen"
 
 
-async def execute_task(task_id: str) -> None:
+
+# =========================
+# Create Task
+# =========================
+
+@router.post("/tasks")
+async def create_task(
+    http_request: Request,
+    request: TaskRequest,
+):
     """
-    Execute a task in the background.
+    Create async Agent task.
     """
 
-    await task_executor.execute(
-        task_id=task_id,
+
+    container = (
+        http_request
+        .app
+        .state
+        .container
     )
 
 
-@router.post("")
-async def create_task(
-    request: TaskRequest,
-    background_tasks: BackgroundTasks,
-):
-    """
-    Create a task and execute it in the background.
-    """
+    runtime = container.runtime
+
+
+    if runtime is None:
+
+        raise HTTPException(
+            status_code=500,
+            detail="AgentRuntime not initialized",
+        )
+
+
 
     session_id = request.session_id
 
+
     if session_id is None:
-        session = session_manager.create_session()
+
+
+        session = (
+            container
+            .session_manager
+            .create_session()
+        )
+
+
         session_id = session.session_id
 
+
+
     task = task_manager.create_task(
+
         session_id=session_id,
-        input=request.message,
+
+        input=request.input,
+
+        model=request.model,
+
     )
 
-    background_tasks.add_task(
-        execute_task,
-        task.id,
+
+
+    await task_queue.enqueue(
+        task
     )
+
+
+
+    logger.info(
+        "Task submitted",
+        extra={
+            "task_id": task.id,
+            "session_id": session_id,
+            "model": request.model,
+        },
+    )
+
+
 
     return {
+
         "task_id": task.id,
+
         "session_id": session_id,
-        "status": task.status,
+
+        "model": request.model,
+
+        "status": "queued",
+
     }
 
 
-@router.get("/{task_id}")
-async def get_task(task_id: str):
+
+# =========================
+# Query Task
+# =========================
+
+@router.get("/tasks/{task_id}")
+async def get_task(
+    task_id: str,
+):
+
     """
-    Get the current task state.
+    Get task status.
     """
+
 
     task = task_manager.get_task(
-        task_id=task_id,
+        task_id
     )
 
+
+
     if task is None:
+
         raise HTTPException(
             status_code=404,
             detail="Task not found",
         )
 
+
+
     return {
+
         "task_id": task.id,
+
         "session_id": task.session_id,
+
+        "model": task.model,
+
         "status": task.status,
+
         "result": task.result,
+
         "error": task.error,
+
     }
