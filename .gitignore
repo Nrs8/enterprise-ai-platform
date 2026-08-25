@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Runtime generated data
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Evaluation outputs
+app/evaluation/reports/

@@ -1,8 +1,3 @@
-"""
-Model access governance policy.
-"""
-
-
 class ModelPolicy:
     """
     Defines which models users or tenants
@@ -26,6 +21,7 @@ class ModelPolicy:
             ],
 
 
+
             #
             # Enterprise users
             #
@@ -36,6 +32,22 @@ class ModelPolicy:
                 "qwen",
 
             ],
+
+
+
+            #
+            # Evaluation users
+            #
+            # Used by evaluation pipeline.
+            #
+            "evaluation_user": [
+
+                "fake",
+
+                "qwen",
+
+            ],
+
 
 
             #
@@ -56,9 +68,13 @@ class ModelPolicy:
 
 
     def allowed(
+
         self,
+
         user_id: str,
+
         model: str,
+
     ) -> bool:
         """
         Check model access.
@@ -66,15 +82,24 @@ class ModelPolicy:
 
 
         allowed_models = (
+
             self.policies.get(
+
                 user_id,
+
                 []
+
             )
+
         )
 
 
         return (
+
             model
+
             in
+
             allowed_models
+
         )

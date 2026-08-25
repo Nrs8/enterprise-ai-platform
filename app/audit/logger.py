@@ -3,7 +3,7 @@ AI audit logging service.
 """
 
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.audit.models import AuditRecord
 
@@ -56,7 +56,7 @@ class AuditLogger:
 
             reason=reason,
 
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
 
         )
 

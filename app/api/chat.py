@@ -4,37 +4,54 @@ Chat API endpoint.
 
 import logging
 
+from uuid import uuid4
+
+
 from fastapi import (
     APIRouter,
     HTTPException,
     Request,
 )
 
+
 from pydantic import BaseModel
 
+
 from app.resilience.exceptions import LLMError
+
 
 from app.observability.metrics import metrics
 
 
+
 logging.basicConfig(
+
     level=logging.INFO,
+
     format=(
+
         "%(asctime)s - %(name)s - "
+
         "%(levelname)s - %(message)s"
+
     ),
+
 )
+
 
 
 logger = logging.getLogger(__name__)
 
 
+
 router = APIRouter()
+
 
 
 # =========================
 # API Models
 # =========================
+
 
 class ChatRequest(BaseModel):
     """
@@ -45,31 +62,52 @@ class ChatRequest(BaseModel):
 
     model: str = "qwen"
 
+    session_id: str | None = None
+
+    user_id: str = "anonymous"
+
+    tenant_id: str = "default"
+
+
+
+
 
 
 # =========================
 # Chat Endpoint
 # =========================
 
+
 @router.post("/chat")
 async def chat(
+
     http_request: Request,
+
     request: ChatRequest,
+
 ):
     """
     Execute AI agent conversation.
     """
 
 
+
     metrics.increment(
+
         "chat_requests"
+
     )
+
 
 
     logger.info(
+
         "Metrics snapshot: %s",
+
         metrics.snapshot(),
+
     )
+
 
 
     #
@@ -77,38 +115,63 @@ async def chat(
     #
 
     container = (
+
         http_request
+
         .app
+
         .state
+
         .container
+
     )
+
 
 
     runtime = container.runtime
 
 
+
     if runtime is None:
 
         raise RuntimeError(
+
             "AgentRuntime is not initialized"
+
         )
 
 
+
     #
-    # Create session
+    # Persistent Memory Session
     #
 
-    session = (
-        container
-        .session_manager
-        .create_session()
-    )
+    session_id = request.session_id
 
 
-    session_id = session.session_id
+
+    if session_id is None:
+
+
+        session_id = str(
+
+            uuid4()
+
+        )
+
+
+        container.memory_manager.create_conversation(
+
+            session_id=session_id,
+
+            user_id="enterprise_user",
+
+        )
+
 
 
     try:
+
 
         response = await runtime.chat(
 
@@ -125,13 +188,18 @@ async def chat(
         )
 
 
+
         return {
+
 
             "session_id": session_id,
 
+
             "model": request.model,
 
+
             "response": response,
+
 
         }
 
@@ -141,8 +209,11 @@ async def chat(
 
 
         logger.error(
+
             "LLM error: %s",
+
             str(e),
+
         )
 
 
@@ -156,11 +227,14 @@ async def chat(
 
 
 
+
     except Exception as e:
 
 
         logger.exception(
+
             "Chat failed"
+
         )
 
 

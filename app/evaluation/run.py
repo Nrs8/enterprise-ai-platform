@@ -2,7 +2,13 @@
 Evaluation runner entry point.
 """
 
+
+from __future__ import annotations
+
+
 import asyncio
+
+import logging
 
 
 from app.container import Container
@@ -16,26 +22,29 @@ from app.evaluation.report import EvaluationReporter
 
 
 
-async def main():
+logger = logging.getLogger(
+    "app.evaluation"
+)
+
+
+
+async def main() -> None:
     """
     Execute evaluation pipeline.
     """
 
 
     #
-    # Create independent application container
+    # Create application container
     #
 
     container = Container()
 
 
     runtime = (
+
         container.runtime
-    )
 
-
-    session_manager = (
-        container.session_manager
     )
 
 
@@ -47,10 +56,7 @@ async def main():
 
         runtime,
 
-        session_manager,
-
     )
-
 
 
     #
@@ -60,6 +66,14 @@ async def main():
     cases = load_cases()
 
 
+    logger.info(
+
+        "Loaded evaluation cases: %d",
+
+        len(cases),
+
+    )
+
 
     #
     # Run evaluation
@@ -67,10 +81,9 @@ async def main():
 
     results = await runner.run(
 
-        cases
+        cases,
 
     )
-
 
 
     #
@@ -82,21 +95,69 @@ async def main():
 
     report = reporter.generate(
 
-        results
+        results,
+
+    )
+
+    report_file = reporter.save(
+
+        report,
+
+        results,
 
     )
 
 
-    print(report)
+    logger.info(
 
+        "Evaluation report: %s",
+
+        report,
+
+    )
+
+    logger.info(
+
+        "Report saved: %s",
+
+        report_file,
+
+    )
 
 
     for result in results:
 
-        print(result)
+
+        logger.info(
+
+            "Evaluation result: %s",
+
+            result,
+
+        )
 
 
 
 if __name__ == "__main__":
+
+
+    logging.basicConfig(
+
+        level=logging.INFO,
+
+        format=(
+
+            "%(asctime)s "
+
+            "%(levelname)s "
+
+            "%(name)s "
+
+            "%(message)s"
+
+        ),
+
+    )
+
 
     asyncio.run(main())

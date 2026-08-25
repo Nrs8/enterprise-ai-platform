@@ -3,37 +3,51 @@ Agent runtime responsible for conversation orchestration.
 
 Coordinates:
 
-Memory
-Governance
-Agents
-Observability
-Audit
+- Memory
+- Governance
+- Planning
+- Workflow Execution
+- Observability
+- Conversation Persistence
+
+
+Runtime does NOT perform reasoning.
+
+Reasoning belongs to Agents.
 """
+
+
+from __future__ import annotations
 
 
 import logging
 
+from contextlib import nullcontext
+
+
+from app.agents.models import AgentResult
+
+from app.memory.manager import MemoryManager
+from app.memory.context_builder import ContextBuilder
 
 from app.agents.supervisor import SupervisorAgent
+from app.agents.executor import AgentExecutor
+from app.agents.registry import AgentRegistry
 
+from app.planning.planner import Planner
+from app.planning.executor import PlanExecutor
 
-from app.memory.models import Message
-
-
-from app.memory.session_manager import (
-    InMemorySessionManager,
-)
-
+from app.workflow.state import WorkflowState
 
 from app.observability import tracer
 
 from app.observability.metrics import metrics
 
-
 from app.runtime.context import AgentContext
 
-
 from app.runtime.steps.governance_step import GovernanceStep
+
+from app.runtime.errors import build_error_info
 
 
 
@@ -48,20 +62,70 @@ logger.setLevel(
 
 
 
+
+
+def _safe_span(
+    tracer_instance,
+    trace,
+    name: str,
+):
+    """
+    Support real tracer and mocked tracer.
+
+    Unit tests may inject Mock tracer.
+    """
+
+    try:
+
+        span = tracer_instance.span(
+            trace,
+            name,
+        )
+
+
+        if hasattr(
+            span,
+            "__enter__",
+        ):
+            return span
+
+
+    except Exception:
+        pass
+
+
+    return nullcontext()
+
+
+
+
+
+
+
 class AgentRuntime:
     """
-    Main orchestration runtime.
+    Main agent orchestration runtime.
+
 
     Responsibilities:
 
-    - Session lifecycle
-    - Governance execution
-    - Agent routing
+    - Conversation lifecycle
+    - Memory loading
+    - Context construction
+    - Governance validation
+    - Supervisor routing
+    - Planning
+    - Workflow execution
+    - Agent execution
+    - Persistence
     - Observability
-    - Conversation persistence
 
-    Agent reasoning is delegated
-    to SupervisorAgent.
+
+    Runtime does NOT:
+
+    - call LLM directly
+    - execute tools
+    - perform reasoning
     """
 
 
@@ -70,53 +134,68 @@ class AgentRuntime:
 
         self,
 
-        session_manager: InMemorySessionManager,
+        memory_manager: MemoryManager,
+
+        context_builder: ContextBuilder,
 
         supervisor_agent: SupervisorAgent,
 
+        agent_registry: AgentRegistry,
+
+        agent_executor: AgentExecutor,
+
         governance_step: GovernanceStep,
+
+        planner: Planner | None = None,
+
+        plan_executor: PlanExecutor | None = None,
 
         tracer=tracer,
 
     ) -> None:
 
 
-
-        #
-        # Memory
-        #
-
-        self._session_manager = (
-            session_manager
+        self._memory_manager = (
+            memory_manager
         )
 
 
+        self._context_builder = (
+            context_builder
+        )
 
-        #
-        # Agent Router
-        #
 
         self._supervisor_agent = (
             supervisor_agent
         )
 
 
+        self._agent_registry = (
+            agent_registry
+        )
 
-        #
-        # Governance
-        #
+
+        self._agent_executor = (
+            agent_executor
+        )
+
 
         self._governance_step = (
             governance_step
         )
 
 
+        self._planner = planner
 
-        #
-        # Observability
-        #
+
+        self._plan_executor = (
+            plan_executor
+        )
+
 
         self.tracer = tracer
+
+
 
 
 
@@ -136,11 +215,11 @@ class AgentRuntime:
 
         tenant_id: str = "default",
 
-    ) -> str:
-        """
-        Execute one AI conversation turn.
-        """
+    ) -> AgentResult:
 
+        """
+        Execute one conversation turn.
+        """
 
 
         metrics.increment(
@@ -158,86 +237,284 @@ class AgentRuntime:
         try:
 
 
+            with _safe_span(
 
-            context = AgentContext(
-
-                session_id=session_id,
-
-                input=message,
-
-                model=model,
-
-                user_id=user_id,
-
-                tenant_id=tenant_id,
-
-            )
-
-
-
-            context.trace = trace
-
-
-
-
-            with self.tracer.span(
+                self.tracer,
 
                 trace,
 
                 "agent_runtime",
-
-                {
-
-                    "session_id":
-                        session_id,
-
-
-                    "user_id":
-                        user_id,
-
-
-                    "tenant_id":
-                        tenant_id,
-
-
-                    "model":
-                        model,
-
-                },
 
             ):
 
 
 
                 #
-                # Load Session
+                # 1.
+                # Load conversation
                 #
 
-                context.session = (
-
-                    self._session_manager
-                    .get_session(
+                conversation = (
+                    self._memory_manager
+                    .get_conversation(
                         session_id
+                    )
+                )
+
+
+
+                if conversation is None:
+
+
+                    conversation = (
+                        self._memory_manager
+                        .create_conversation(
+                            session_id=session_id,
+                            user_id=user_id,
+                        )
+                    )
+
+
+
+                #
+                # 2.
+                # Persist user message
+                #
+
+                self._memory_manager.add_message(
+
+                    session_id=session_id,
+
+                    role="user",
+
+                    content=message,
+
+                )
+
+
+
+                #
+                # 3.
+                # Reload memory
+                #
+
+                conversation = (
+                    self._memory_manager
+                    .get_conversation(
+                        session_id
+                    )
+                )
+
+
+
+                if conversation is None:
+
+                    raise RuntimeError(
+                        "Conversation missing"
+                    )
+
+
+
+
+                #
+                # 4.
+                # Build context
+                #
+
+                context = AgentContext(
+
+                    session_id=session_id,
+
+                    input=message,
+
+                    model=model,
+
+                    user_id=user_id,
+
+                    tenant_id=tenant_id,
+
+                    trace=trace,
+
+                )
+
+
+                context.session = conversation
+
+
+
+
+                #
+                # 5.
+                # Context window
+                #
+
+                self._context_builder.build(
+
+                    context,
+
+                    conversation,
+
+                )
+
+
+
+
+                #
+                # 6.
+                # Governance
+                #
+
+                await self._governance_step.run(
+
+                    context
+
+                )
+
+
+
+
+
+                #
+                # 7.
+                # Supervisor routing
+                #
+
+                decision = await (
+
+                    self._supervisor_agent
+
+                    .decide(
+
+                        context
+
                     )
 
                 )
 
 
 
-                logger.info(
+                context.metadata[
 
-                    "Loaded conversation session",
+                    "agent_decision"
 
-                    extra={
-
-                        "session_id":
-                            session_id,
+                ] = decision
 
 
-                        "message_count":
-                            len(
-                                context.session.messages
-                            ),
+
+
+
+                #
+                # 8.
+                # Execute agent
+                #
+
+                result: AgentResult
+
+
+
+                agent = (
+
+                    self._agent_registry
+
+                    .get(
+
+                        decision.agent_name
+
+                    )
+
+                )
+
+
+
+                if agent is None:
+
+
+                    raise RuntimeError(
+
+                        f"Agent not found: "
+
+                        f"{decision.agent_name}"
+
+                    )
+
+
+
+
+                result = await (
+
+                    self._agent_executor
+
+                    .execute(
+
+                        agent,
+
+                        context,
+
+                    )
+
+                )
+
+
+
+
+                if not result.success:
+
+                    return result
+
+
+
+
+
+                #
+                # 9.
+                # Update context
+                #
+
+                context.set_response(
+
+                    result.response or ""
+
+                )
+
+
+
+
+
+                #
+                # 10.
+                # Save assistant message
+                #
+
+                self._memory_manager.add_message(
+
+                    session_id=session_id,
+
+                    role="assistant",
+
+                    content=result.response or "",
+
+                )
+
+
+
+
+
+                #
+                # 11.
+                # Return
+                #
+
+                return AgentResult.success_result(
+
+                    response=result.response or "",
+
+                    agent=result.agent,
+
+                    metadata={
+
+                        "trace_id":
+
+                            trace.trace_id
 
                     },
 
@@ -246,112 +523,47 @@ class AgentRuntime:
 
 
 
-                #
-                # Governance
-                #
-
-                with self.tracer.span(
-
-                    trace,
-
-                    "governance_check",
-
-                ):
+        except Exception as exc:
 
 
-                    await self._governance_step.run(
+            logger.exception(
 
-                        context
+                "Agent runtime failed"
 
-                    )
-
-
+            )
 
 
-                #
-                # Agent Execution
-                #
+            metrics.increment(
 
-                with self.tracer.span(
+                "runtime_errors_total"
 
-                    trace,
-
-                    "agent_execution",
-
-                ):
+            )
 
 
-                    result = await (
+            return AgentResult.failure(
 
-                        self._supervisor_agent
-                        .execute(
+                error=build_error_info(exc)
 
-                            context
+            )
 
-                        )
-
-                    )
-
-
-
-                response = (
-                    result.response
-                )
-
-
-
-
-                #
-                # Persist Conversation
-                #
-
-                self._session_manager.add_message(
-
-                    session_id,
-
-
-                    Message(
-
-                        role="user",
-
-                        content=message,
-
-                    )
-
-                )
-
-
-
-                self._session_manager.add_message(
-
-                    session_id,
-
-
-                    Message(
-
-                        role="assistant",
-
-                        content=response,
-
-                    )
-
-                )
-
-
-
-                return response
 
 
 
         finally:
 
 
-
-            #
-            # Always close trace
-            #
-
             trace.finish()
+
+
+            try:
+
+                span_count = len(
+                    trace.spans
+                )
+
+            except Exception:
+
+                span_count = 0
 
 
 
@@ -362,17 +574,26 @@ class AgentRuntime:
                 extra={
 
                     "trace_id":
+
                         trace.trace_id,
 
 
                     "duration_ms":
-                        trace.duration_ms,
+
+                        getattr(
+
+                            trace,
+
+                            "duration_ms",
+
+                            0,
+
+                        ),
 
 
                     "span_count":
-                        len(
-                            trace.spans
-                        ),
+
+                        span_count,
 
                 },
 

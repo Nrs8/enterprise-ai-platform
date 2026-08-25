@@ -1,79 +1,169 @@
+"""
+Observability data models.
+
+Contains:
+
+- Trace
+- Span
+
+Used by:
+
+AgentRuntime
+AgentExecutor
+LLM
+Tools
+"""
+
+from __future__ import annotations
+
+
 from dataclasses import dataclass, field
-from datetime import datetime
-from uuid import uuid4
+
+from datetime import datetime, timezone
+
+
+from typing import Any, Dict, List
+
+
+import uuid
+
+
+
+
+
+# ============================================================
+# Span
+# ============================================================
 
 
 @dataclass
 class Span:
     """
-    Represents one operation inside a trace.
+    Single execution span.
     """
 
     name: str
 
-    span_id: str = field(
-        default_factory=lambda: str(uuid4())
-    )
-
     start_time: datetime = field(
-        default_factory=datetime.utcnow
+        default_factory=lambda:
+            datetime.now(timezone.utc)
     )
 
     end_time: datetime | None = None
 
-    attributes: dict[str, str] = field(
+
+    attributes: Dict[str, Any] = field(
         default_factory=dict
     )
 
+
+
     def finish(self) -> None:
-        self.end_time = datetime.utcnow()
+        """
+        Finish span.
+        """
+
+        self.end_time = (
+            datetime.now(timezone.utc)
+        )
+
+
 
     @property
     def duration_ms(self) -> float | None:
         """
-        Return span duration in milliseconds.
+        Calculate span duration.
         """
 
         if self.end_time is None:
             return None
 
+
         return (
-            self.end_time - self.start_time
+            self.end_time
+            -
+            self.start_time
         ).total_seconds() * 1000
+
+
+
+
+
+# ============================================================
+# Trace
+# ============================================================
 
 
 @dataclass
 class Trace:
     """
-    Represents one complete request execution.
+    Represents one agent execution trace.
     """
 
+
     trace_id: str = field(
-        default_factory=lambda: str(uuid4())
+        default_factory=lambda:
+            str(uuid.uuid4())
     )
+
 
     start_time: datetime = field(
-        default_factory=datetime.utcnow
+        default_factory=lambda:
+            datetime.now(timezone.utc)
     )
 
-    end_time: datetime | None = None
 
-    spans: list[Span] = field(
+    spans: List[Span] = field(
         default_factory=list
     )
 
+
+    end_time: datetime | None = None
+
+
+    attributes: Dict[str, Any] = field(
+        default_factory=dict
+    )
+
+
+
     def finish(self) -> None:
-        self.end_time = datetime.utcnow()
+        """
+        Finish trace.
+        """
+
+        self.end_time = (
+            datetime.now(timezone.utc)
+        )
+
+
 
     @property
     def duration_ms(self) -> float | None:
         """
-        Return trace duration in milliseconds.
+        Return trace duration.
         """
 
         if self.end_time is None:
             return None
 
+
         return (
-            self.end_time - self.start_time
+            self.end_time
+            -
+            self.start_time
         ).total_seconds() * 1000
+
+
+
+    def add_span(
+        self,
+        span: Span,
+    ) -> None:
+        """
+        Add execution span.
+        """
+
+        self.spans.append(
+            span
+        )

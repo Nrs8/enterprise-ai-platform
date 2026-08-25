@@ -1,77 +1,150 @@
+"""
+Tool execution agent.
+
+Responsible for executing
+tool-based reasoning workflow.
+"""
+
+
+from __future__ import annotations
+
+
+import logging
+
+
 from app.agents.base import BaseAgent
+from app.agents.models import AgentResult
 
 from app.runtime.context import AgentContext
 
-from app.runtime.loop import AgentLoop
 
-from app.runtime.steps.llm import LLMStep
+logger = logging.getLogger(
+    "app.agents.tool_agent"
+)
+
+
+
 
 
 class ToolAgent(BaseAgent):
     """
-    Agent responsible for tool execution.
+    Agent responsible for
+    tool-based tasks.
+
 
     Flow:
 
-        LLMStep
-          |
-          v
-        AgentLoop
-          |
-          +---- ToolStep
-          |
-          +---- LLMStep
+        AgentContext
+             |
+             v
+        ToolAgent.execute()
+             |
+             v
+        ToolCallingExecutor
+             |
+             v
+        LLM
+             |
+             v
+        Tool execution
+             |
+             v
+        AgentResult
     """
+
+
 
     name = "tool_agent"
 
 
-    description = (
-        "Handles tasks requiring tools."
-    )
+
 
 
     def __init__(
         self,
-        llm_step: LLMStep,
-        agent_loop: AgentLoop,
+        tool_calling_executor,
     ) -> None:
 
 
-        self.llm_step = llm_step
+        self._tool_calling_executor = (
+            tool_calling_executor
+        )
 
-        self.agent_loop = agent_loop
+
+
+
 
 
 
     async def execute(
         self,
         context: AgentContext,
-    ) -> AgentContext:
+    ) -> AgentResult:
         """
-        Execute tool workflow.
+        Execute tool agent.
+
+
+        The agent delegates
+        reasoning loop to
+        ToolCallingExecutor.
         """
 
 
-        #
-        # First LLM reasoning
-        #
-        await self.llm_step.execute(
-            context
+        logger.info(
+            "ToolAgent executing"
         )
 
 
-        #
-        # Tool loop
-        #
-        response = await (
-            self.agent_loop.run(
-                context
+        try:
+
+
+            await (
+                self._tool_calling_executor
+                .execute(
+                    context
+                )
             )
-        )
 
 
-        context.response = response
+
+            return AgentResult(
+
+                response=(
+                    context.response
+                    or ""
+                ),
+
+                success=True,
+
+                agent=self.name,
+
+                metadata={
+
+                    "type":
+                    "tool_execution"
+
+                },
+
+            )
 
 
-        return context
+
+        except Exception as exc:
+
+
+            logger.exception(
+
+                "ToolAgent failed"
+
+            )
+
+
+            return AgentResult(
+
+                success=False,
+
+                agent=self.name,
+
+                error=str(exc),
+
+            )

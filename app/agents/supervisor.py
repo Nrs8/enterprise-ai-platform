@@ -1,69 +1,117 @@
 """
 Supervisor agent.
 
-Responsible for routing user requests
-to specialized agents.
+Responsible only for routing decisions.
+
+Supervisor does NOT execute agents.
+
+Flow:
+
+AgentRuntime
+      |
+      v
+SupervisorAgent
+      |
+      v
+AgentDecision
+      |
+      v
+AgentRegistry
+      |
+      v
+Specialized Agent
 """
+
+
+from __future__ import annotations
+
 
 import logging
 
-from app.agents.base import BaseAgent
+
 from app.agents.models import AgentDecision
-from app.agents.registry import AgentRegistry
+
 from app.runtime.context import AgentContext
 
 
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(
+    __name__
+)
 
 
-class SupervisorAgent(BaseAgent):
+
+
+
+class SupervisorAgent:
     """
-    Agent responsible for routing requests
-    to specialized agents.
+    Responsible for agent routing.
+
+    Responsibilities:
+
+    - Analyze user request
+    - Select target agent
+    - Produce AgentDecision
+
+
+    Supervisor does NOT:
+
+    - execute agents
+    - call LLM
+    - run tools
+    - modify memory
     """
+
+
 
     name = "supervisor"
+
+
 
     description = (
         "Routes requests to appropriate agents."
     )
 
 
+
+
     def __init__(
         self,
-        registry: AgentRegistry,
-        tracer,
+        tracer=None,
     ) -> None:
         """
         Initialize supervisor.
-
-        Args:
-            registry:
-                Agent registry.
-
-            tracer:
-                Observability tracer.
         """
 
-        self.registry = registry
 
         self.tracer = tracer
 
 
 
-    async def execute(
+
+
+
+    async def decide(
         self,
         context: AgentContext,
-    ) -> AgentContext:
+    ) -> AgentDecision:
         """
-        Execute routing decision
-        and delegate execution.
+        Decide which agent should handle request.
+
+        Returns:
+
+            AgentDecision
+
+        Runtime will execute
+        the selected agent.
         """
+
 
 
         decision = self._decide(
             context.input
         )
+
 
 
         self._record_decision(
@@ -72,22 +120,21 @@ class SupervisorAgent(BaseAgent):
         )
 
 
-        agent = self.registry.get(
-            decision.agent_name
-        )
-
 
         logger.info(
-            "Supervisor selected agent=%s reason=%s confidence=%.2f",
+            "Supervisor selected agent=%s "
+            "reason=%s confidence=%.2f",
             decision.agent_name,
             decision.reason,
             decision.confidence,
         )
 
 
-        return await agent.execute(
-            context
-        )
+
+        return decision
+
+
+
 
 
 
@@ -96,14 +143,21 @@ class SupervisorAgent(BaseAgent):
         message: str,
     ) -> AgentDecision:
         """
-        Decide target agent.
+        Routing logic.
 
         Current:
-            Rule based routing.
+
+            Rule based routing
+
 
         Future:
-            Hybrid rule + LLM router.
+
+            Hybrid:
+                Rule
+                +
+                LLM Router
         """
+
 
 
         keywords = [
@@ -121,23 +175,26 @@ class SupervisorAgent(BaseAgent):
         ]
 
 
+
         lower = message.lower()
 
 
 
         for keyword in keywords:
 
+
             if keyword in lower:
+
 
                 return AgentDecision(
 
-                    agent_name=(
-                        "knowledge_agent"
-                    ),
+                    agent_name=
+                        "knowledge_agent",
 
-                    reason=(
-                        f"matched keyword: {keyword}"
-                    ),
+
+                    reason=
+                        f"matched keyword: {keyword}",
+
 
                     confidence=0.9,
 
@@ -145,19 +202,25 @@ class SupervisorAgent(BaseAgent):
 
 
 
+
+
         return AgentDecision(
 
-            agent_name=(
-                "tool_agent"
-            ),
+            agent_name=
+                "tool_agent",
 
-            reason=(
-                "default tool agent routing"
-            ),
+
+            reason=
+                "default tool agent routing",
+
 
             confidence=0.7,
 
         )
+
+
+
+
 
 
 
@@ -167,11 +230,9 @@ class SupervisorAgent(BaseAgent):
         decision: AgentDecision,
     ) -> None:
         """
-        Record supervisor decision.
-
-        Keeps routing visibility for
-        production debugging.
+        Record routing decision.
         """
+
 
 
         if self.tracer is None:
@@ -182,6 +243,7 @@ class SupervisorAgent(BaseAgent):
 
         try:
 
+
             self.tracer.add_event(
 
                 "supervisor_decision",
@@ -191,14 +253,18 @@ class SupervisorAgent(BaseAgent):
                     "session_id":
                         context.session_id,
 
+
                     "input":
                         context.input,
+
 
                     "agent":
                         decision.agent_name,
 
+
                     "reason":
                         decision.reason,
+
 
                     "confidence":
                         decision.confidence,
@@ -208,7 +274,9 @@ class SupervisorAgent(BaseAgent):
             )
 
 
+
         except Exception:
+
 
             logger.exception(
                 "Failed to record supervisor decision"

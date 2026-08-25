@@ -2,6 +2,7 @@
 Model access permission checker.
 """
 
+
 from app.security.models import (
     UserPermission,
 )
@@ -81,6 +82,32 @@ class PermissionChecker:
                 ],
             ),
 
+
+
+            #
+            # Evaluation user
+            #
+            # Used by Evaluation Pipeline.
+            #
+            # This keeps evaluation requests
+            # inside the normal governance flow.
+            #
+
+            "evaluation_user":
+
+            UserPermission(
+
+                user_id="evaluation_user",
+
+                allowed_models=[
+
+                    "fake",
+
+                    "qwen",
+
+                ],
+            ),
+
         }
 
 
@@ -97,9 +124,13 @@ class PermissionChecker:
 
 
     def check(
+
         self,
+
         user_id: str,
+
         model: str,
+
     ) -> bool:
         """
         Returns True if user can access model.
@@ -108,15 +139,18 @@ class PermissionChecker:
         """
 
 
-
         #
         # 1. User permission check
         #
 
         permission = (
+
             self.permissions.get(
+
                 user_id
+
             )
+
         )
 
 
@@ -128,7 +162,9 @@ class PermissionChecker:
 
 
         if model not in (
+
             permission.allowed_models
+
         ):
 
             return False
@@ -141,19 +177,28 @@ class PermissionChecker:
         #
 
         return (
+
             self.model_policy.allowed(
+
                 user_id=user_id,
+
                 model=model,
+
             )
+
         )
 
 
 
 
     def check_model(
+
         self,
+
         user_id: str,
+
         model: str,
+
     ) -> bool:
         """
         Governance layer API.
@@ -161,6 +206,7 @@ class PermissionChecker:
         Checks whether a user is allowed
         to access a specific model.
         """
+
 
         return self.check(
 

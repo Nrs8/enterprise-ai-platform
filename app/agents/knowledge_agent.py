@@ -1,18 +1,27 @@
 """
 Knowledge Agent.
 
-Responsible for knowledge retrieval
-and answer generation.
+Responsible for retrieval
+augmented generation.
 """
 
 
+from __future__ import annotations
+
+
+import logging
+
+
 from app.agents.base import BaseAgent
+from app.agents.models import AgentResult
 
 from app.runtime.context import AgentContext
 
-from app.runtime.steps.retrieve import RetrieveStep
 
-from app.runtime.steps.llm import LLMStep
+
+logger = logging.getLogger(
+    "app.agents.knowledge_agent"
+)
 
 
 
@@ -20,112 +29,144 @@ from app.runtime.steps.llm import LLMStep
 
 class KnowledgeAgent(BaseAgent):
     """
-    Agent responsible for knowledge retrieval
-    and answer generation.
+    Agent responsible for
+    knowledge retrieval.
+
+
+    Flow:
+
+        AgentContext
+             |
+             v
+        RetrieveStep
+             |
+             v
+        LLMStep
+             |
+             v
+        AgentResult
     """
+
 
 
     name = "knowledge_agent"
 
 
-    description = (
-        "Handles knowledge retrieval "
-        "using RAG and LLM."
-    )
 
 
 
     def __init__(
-
         self,
-
-        retrieve_step: RetrieveStep,
-
-        llm_step: LLMStep,
-
+        retrieve_step,
+        llm_step,
     ) -> None:
 
 
-        self.retrieve_step = (
+        self._retrieve_step = (
             retrieve_step
         )
 
 
-        self.llm_step = (
+        self._llm_step = (
             llm_step
         )
 
 
 
+
+
     async def execute(
-
         self,
-
         context: AgentContext,
-
-    ) -> AgentContext:
+    ) -> AgentResult:
         """
-        Execute RAG workflow.
-
-        Flow:
-
-        User Input
-
-            |
-
-            v
-
-        RetrieveStep
-
-            |
-
-            v
-
-        LLMStep
-
-            |
-
-            v
-
-        Response
+        Execute knowledge workflow.
         """
 
 
-
-        #
-        # Retrieve knowledge
-        #
-
-        await self.retrieve_step.execute(
-
-            context
-
+        logger.info(
+            "KnowledgeAgent executing"
         )
 
 
-
-        #
-        # Generate answer
-        #
-
-        await self.llm_step.execute(
-
-            context
-
-        )
+        try:
 
 
+            #
+            # Retrieve documents
+            #
 
-        #
-        # Save final response
-        #
-
-        if context.llm_response:
-
-            context.response = (
-                context.llm_response.content
+            await (
+                self._retrieve_step
+                .execute(
+                    context
+                )
             )
 
 
 
-        return context
+            #
+            # Generate answer
+            #
+
+            response = await (
+                self._llm_step
+                .execute(
+                    context
+                )
+            )
+
+
+            content = (
+                response.content
+                or ""
+            )
+
+
+
+            context.set_response(
+                content
+            )
+
+
+
+            return AgentResult(
+
+                response=content,
+
+                success=True,
+
+                agent=self.name,
+
+                metadata={
+
+                    "type":
+                    "knowledge_retrieval",
+
+                },
+
+            )
+
+
+
+        except Exception as exc:
+
+
+            logger.exception(
+                "KnowledgeAgent failed"
+            )
+
+
+            return AgentResult(
+
+                response=(
+                    "Knowledge retrieval failed"
+                ),
+
+                success=False,
+
+                agent=self.name,
+
+                error=str(exc),
+
+            )

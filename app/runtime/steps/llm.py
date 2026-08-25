@@ -8,130 +8,337 @@ Responsible for:
 3. Saving LLM response into AgentContext
 """
 
+
+from __future__ import annotations
+
+
 import logging
 
-from app.runtime.steps.base import AgentStep
-from app.llm.models import LLMResponse
+
+from app.runtime.steps.base import (
+    AgentStep,
+)
 
 
-logger = logging.getLogger(__name__)
+from app.llm.models import (
+    LLMResponse,
+)
+
+
+
+logger = logging.getLogger(
+    __name__
+)
+
+
+
+
+
+
 
 
 class LLMStep(AgentStep):
     """
-    Responsible for prompt construction
-    and LLM generation.
+    Responsible for LLM generation.
+
+
+    Responsibilities:
+
+    - Build prompt
+    - Call LLM Gateway
+    - Store LLM response
+
+
+    Does NOT:
+
+    - Manage memory
+    - Execute tools
+    - Route agents
     """
 
+
+
+
+
+
+
     def __init__(
+
         self,
+
         llm_gateway,
+
         prompt_builder,
+
         tool_registry,
+
     ) -> None:
-        """
-        Initialize LLM step.
-        """
 
-        self._llm_gateway = llm_gateway
 
-        self._prompt_builder = prompt_builder
+        self._llm_gateway = (
+            llm_gateway
+        )
 
-        self._tool_registry = tool_registry
+
+        self._prompt_builder = (
+            prompt_builder
+        )
+
+
+        self._tool_registry = (
+            tool_registry
+        )
+
+
+
+
+
+
+
 
 
     async def execute(
+
         self,
+
         context,
+
     ) -> LLMResponse:
         """
         Execute LLM generation.
+
+
+        Flow:
+
+
+        AgentContext
+
+             |
+
+             v
+
+
+        PromptBuilder
+
+
+             |
+
+             v
+
+
+        LLM Messages
+
+
+             |
+
+             v
+
+
+        LLM Gateway
+
+
+             |
+
+             v
+
+
+        LLMResponse
+
         """
 
+
+
+
+
+
+
         #
-        # Build messages
+        # Build prompt messages
+        #
+        # Only build once.
+        #
+        # Tool calling loop will
+        # append messages later.
         #
 
         if not context.messages:
 
+
             context.messages = (
+
                 self._prompt_builder.build(
 
-                    history=
-                        context.session.messages,
-
-                    user_message=
-                        context.input,
-
-                    knowledge_context=
-                        context.knowledge_context,
+                    context
 
                 )
+
             )
 
 
+
+
+
+
+
+
         logger.info(
-            "Calling LLM model=%s",
-            context.model,
+
+            "LLM messages count=%s",
+
+            len(
+
+                context.messages
+
+            ),
+
         )
 
 
+
+
+
+
+
+
+        for message in context.messages:
+
+
+            logger.debug(
+
+                "LLM message role=%s content=%s",
+
+                message.role,
+
+                (
+
+                    message.content[:100]
+
+                    if message.content
+
+                    else ""
+
+                ),
+
+            )
+
+
+
+
+
+
+
+
+
         #
-        # Call LLM
+        # Generate response
         #
 
         response = await (
+
             self._llm_gateway.generate(
 
-                messages=
-                    context.messages,
+                messages=(
+
+                    context.messages
+
+                ),
 
 
-                tools=
-                    self._tool_registry.get_schemas(),
+                tools=(
+
+                    self._tool_registry
+
+                    .get_schemas()
+
+                ),
 
 
-                model=
-                    context.model,
+                model=(
+
+                    context.model
+
+                ),
 
 
-                session_id=
-                    context.session_id,
+                session_id=(
+
+                    context.session_id
+
+                ),
 
 
-                user_id=
-                    context.user_id,
+                user_id=(
+
+                    context.user_id
+
+                ),
 
 
-                tenant_id=
-                    context.tenant_id,
+                tenant_id=(
+
+                    context.tenant_id
+
+                ),
 
             )
+
         )
 
 
-        #
-        # Safety check
-        #
+
+
+
+
+
 
         if response is None:
 
+
             raise RuntimeError(
+
                 "LLMGateway returned None"
+
             )
 
 
+
+
+
+
+
+
+
         #
-        # Store response
+        # Save LLM response
         #
 
-        context.llm_response = response
+        context.set_llm_response(
+
+            response
+
+        )
+
+
+
+
+
+
+
 
 
         logger.info(
+
             "LLM completed. tool_calls=%s",
+
             response.tool_calls,
+
         )
+
+
+
+
+
+
 
 
         return response
