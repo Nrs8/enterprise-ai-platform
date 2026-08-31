@@ -75,6 +75,7 @@ class SupervisorAgent:
 
 
 
+
     def __init__(
         self,
         tracer=None,
@@ -83,8 +84,8 @@ class SupervisorAgent:
         Initialize supervisor.
         """
 
-
         self.tracer = tracer
+
 
 
 
@@ -98,11 +99,7 @@ class SupervisorAgent:
         """
         Decide which agent should handle request.
 
-        Returns:
-
-            AgentDecision
-
-        Runtime will execute
+        Runtime executes
         the selected agent.
         """
 
@@ -138,6 +135,7 @@ class SupervisorAgent:
 
 
 
+
     def _decide(
         self,
         message: str,
@@ -153,14 +151,77 @@ class SupervisorAgent:
         Future:
 
             Hybrid:
+
                 Rule
-                +
+                  +
                 LLM Router
         """
 
 
 
-        keywords = [
+        lower = message.lower()
+
+
+
+        #
+        # Customer service routing
+        #
+
+        customer_keywords = [
+
+            "ticket",
+
+            "complaint",
+
+            "problem",
+
+            "issue",
+
+            "support",
+
+            "refund",
+
+            "order",
+
+            "customer",
+
+            "account",
+
+        ]
+
+
+
+        for keyword in customer_keywords:
+
+
+            if keyword in lower:
+
+
+                return AgentDecision(
+
+                    agent_name=
+                        "customer_service_agent",
+
+
+                    reason=
+                        f"matched customer keyword: {keyword}",
+
+
+                    confidence=0.85,
+
+                )
+
+
+
+
+
+
+
+        #
+        # Knowledge routing
+        #
+
+        knowledge_keywords = [
 
             "document",
 
@@ -176,11 +237,7 @@ class SupervisorAgent:
 
 
 
-        lower = message.lower()
-
-
-
-        for keyword in keywords:
+        for keyword in knowledge_keywords:
 
 
             if keyword in lower:
@@ -204,6 +261,12 @@ class SupervisorAgent:
 
 
 
+
+
+        #
+        # Default tool routing
+        #
+
         return AgentDecision(
 
             agent_name=
@@ -217,6 +280,8 @@ class SupervisorAgent:
             confidence=0.7,
 
         )
+
+
 
 
 
@@ -238,6 +303,8 @@ class SupervisorAgent:
         if self.tracer is None:
 
             return
+
+
 
 
 
@@ -272,6 +339,8 @@ class SupervisorAgent:
                 },
 
             )
+
+
 
 
 
