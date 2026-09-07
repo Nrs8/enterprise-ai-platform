@@ -17,7 +17,7 @@ from app.agents.models import AgentResult
 
 from app.runtime.context import AgentContext
 
-
+from app.runtime.errors import build_error_info
 
 logger = logging.getLogger(
     "app.agents.knowledge_agent"
@@ -167,6 +167,6 @@ class KnowledgeAgent(BaseAgent):
 
                 agent=self.name,
 
-                error=str(exc),
+                error=build_error_info(exc),
 
             )

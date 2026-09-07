@@ -174,7 +174,7 @@ class MemoryManager:
 
 
         conversation.updated_at = (
-            datetime.utcnow()
+            datetime.now(timezone.utc)
         )
 
 

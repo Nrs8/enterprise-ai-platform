@@ -14,7 +14,7 @@ Supports:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 
@@ -65,16 +65,16 @@ class WorkflowState:
     metadata: Dict[str, Any] = field(
         default_factory=dict
     )
+
     response: str = ""
 
     created_at: datetime = field(
-        default_factory=datetime.utcnow
+        default_factory=lambda: datetime.now(timezone.utc)
     )
 
     updated_at: datetime = field(
-        default_factory=datetime.utcnow
+        default_factory=lambda: datetime.now(timezone.utc)
     )
-
 
     # ========================================================
     # Update Operations
@@ -101,9 +101,8 @@ class WorkflowState:
         )
 
         self.updated_at = (
-            datetime.utcnow()
+            datetime.now(timezone.utc)
         )
-
 
     def add_result(
         self,
@@ -127,11 +126,9 @@ class WorkflowState:
             node_id
         ] = result
 
-
         self.updated_at = (
-            datetime.utcnow()
+            datetime.now(timezone.utc)
         )
-
 
     # ========================================================
     # Snapshot
@@ -172,7 +169,6 @@ class WorkflowState:
             ),
         }
 
-
     # ========================================================
     # Restore
     # ========================================================
@@ -193,7 +189,6 @@ class WorkflowState:
             ),
         )
 
-
         state.current_node = data.get(
             "current_node"
         )
@@ -212,6 +207,5 @@ class WorkflowState:
             "metadata",
             {},
         )
-
 
         return state

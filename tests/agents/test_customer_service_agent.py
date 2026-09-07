@@ -5,7 +5,7 @@ Tests for CustomerServiceAgent.
 from __future__ import annotations
 
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 import pytest
@@ -45,7 +45,7 @@ class FakeCustomerService:
             id=customer_id,
             name="Alice",
             email="alice@test.com",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
 
@@ -64,8 +64,8 @@ class FakeTicketService:
             description="Cannot login",
             status=TicketStatus.OPEN,
             priority=TicketPriority.MEDIUM,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
 

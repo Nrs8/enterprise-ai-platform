@@ -3,7 +3,7 @@ Tests for MemoryManager.
 """
 
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 from app.memory.manager import (
@@ -193,9 +193,9 @@ def test_add_user_memory(
 
         confidence=0.9,
 
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
 
-        updated_at=datetime.utcnow(),
+        updated_at=datetime.now(timezone.utc),
 
     )
 
@@ -255,9 +255,9 @@ def test_find_user_memory(
 
             confidence=1.0,
 
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
 
-            updated_at=datetime.utcnow(),
+            updated_at=datetime.now(timezone.utc),
 
         ),
 

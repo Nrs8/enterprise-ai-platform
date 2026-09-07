@@ -19,7 +19,7 @@ from app.runtime.context import AgentContext
 from app.workflow.engine import WorkflowEngine
 from app.workflow.registry import WorkflowRegistry
 from app.workflow.state import WorkflowState
-
+from app.runtime.errors import build_error_info
 
 logger = logging.getLogger(
     "app.agents.customer_service_agent"
@@ -329,7 +329,7 @@ class CustomerServiceAgent(BaseAgent):
                 ),
                 success=False,
                 agent=self.name,
-                error=str(exc),
+                error=build_error_info(exc),
             )
 
 

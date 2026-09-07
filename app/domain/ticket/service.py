@@ -1,3 +1,4 @@
+
 """
 Ticket domain service.
 
@@ -6,7 +7,7 @@ Contains ticket business rules.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from .models import (
@@ -30,7 +31,6 @@ class TicketService:
 
         self.repository = repository
 
-
     async def create_ticket(
         self,
         customer_id: str,
@@ -42,7 +42,7 @@ class TicketService:
         Create new support ticket.
         """
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         ticket = Ticket(
             id=str(uuid4()),
@@ -61,7 +61,6 @@ class TicketService:
 
         return ticket
 
-
     async def get_ticket(
         self,
         ticket_id: str,
@@ -75,7 +74,6 @@ class TicketService:
                 ticket_id
             )
         )
-
 
     async def update_status(
         self,
@@ -93,21 +91,17 @@ class TicketService:
         if ticket is None:
             return None
 
-
         ticket.status = status
 
         ticket.updated_at = (
-            datetime.utcnow()
+            datetime.now(timezone.utc)
         )
-
 
         await self.repository.save(
             ticket
         )
 
-
         return ticket
-
 
     async def resolve_ticket(
         self,
@@ -121,7 +115,6 @@ class TicketService:
             ticket_id,
             TicketStatus.RESOLVED,
         )
-
 
     async def close_ticket(
         self,

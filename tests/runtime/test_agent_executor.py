@@ -2,16 +2,11 @@
 Tests for AgentExecutor.
 """
 
-
 import pytest
-
 
 from app.agents.executor import AgentExecutor
 from app.agents.models import AgentResult
 from app.runtime.context import AgentContext
-
-
-
 
 
 class SuccessAgent:
@@ -21,20 +16,15 @@ class SuccessAgent:
 
     name = "success_agent"
 
-
     async def execute(
         self,
         context,
     ):
-
         return AgentResult(
             response="ok",
             success=True,
             agent=self.name,
         )
-
-
-
 
 
 class FailureAgent:
@@ -44,18 +34,13 @@ class FailureAgent:
 
     name = "failure_agent"
 
-
     async def execute(
         self,
         context,
     ):
-
         raise ValueError(
             "agent crashed"
         )
-
-
-
 
 
 class ContextAgent:
@@ -65,20 +50,14 @@ class ContextAgent:
 
     name = "context_agent"
 
-
     def __init__(self):
-
         self.received_context = None
-
-
 
     async def execute(
         self,
         context,
     ):
-
         self.received_context = context
-
 
         return AgentResult(
             response="ok",
@@ -87,12 +66,8 @@ class ContextAgent:
         )
 
 
-
-
-
 @pytest.fixture
 def context():
-
     return AgentContext(
         session_id="test-session",
         input="hello",
@@ -102,94 +77,71 @@ def context():
     )
 
 
-
-
-
 @pytest.mark.asyncio
 async def test_agent_executor_success(
     context,
 ):
-
     executor = AgentExecutor()
 
     agent = SuccessAgent()
-
 
     result = await executor.execute(
         agent,
         context,
     )
-
 
     assert result.success is True
     assert result.response == "ok"
     assert result.agent == "success_agent"
 
 
-
-
-
 @pytest.mark.asyncio
 async def test_agent_executor_failure(
     context,
 ):
-
     executor = AgentExecutor()
 
     agent = FailureAgent()
-
 
     result = await executor.execute(
         agent,
         context,
     )
 
-
     assert result.success is False
     assert result.agent == "failure_agent"
-    assert "agent crashed" in result.error
-
-
-
+    assert result.error is not None
+    assert result.error.message == "agent crashed"
 
 
 @pytest.mark.asyncio
 async def test_agent_executor_forwards_context(
     context,
 ):
-
     executor = AgentExecutor()
 
     agent = ContextAgent()
-
 
     await executor.execute(
         agent,
         context,
     )
 
-
     assert agent.received_context is context
-
-
-
 
 
 @pytest.mark.asyncio
 async def test_agent_executor_returns_agent_result(
     context,
 ):
-
     executor = AgentExecutor()
 
     agent = SuccessAgent()
-
 
     result = await executor.execute(
         agent,
         context,
     )
-
 
     assert isinstance(
         result,

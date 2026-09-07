@@ -233,6 +233,7 @@ async def test_tool_calling_executor_executes_tool(
 
 
     tool_step.execute_tool.assert_called_once_with(
+        context=context,
         tool_name="calculator",
         arguments={
             "expression": "8*6"

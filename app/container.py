@@ -55,7 +55,6 @@ from app.workflow.executors.agent_executor import (
 )
 
 
-
 #
 # LLM
 #
@@ -75,7 +74,6 @@ from app.llm.router import (
 from app.llm.gateway import (
     LLMGateway,
 )
-
 
 
 #
@@ -104,7 +102,6 @@ from app.memory.repository import (
 )
 
 
-
 #
 # Prompt
 #
@@ -112,7 +109,6 @@ from app.memory.repository import (
 from app.prompt.builder import (
     PromptBuilder,
 )
-
 
 
 #
@@ -132,7 +128,6 @@ from knowledge.knowledge_base import (
 )
 
 
-
 #
 # Tools
 #
@@ -144,7 +139,6 @@ from app.tools.registry import (
 from app.tools.calculator import (
     CalculatorTool,
 )
-
 
 
 #
@@ -164,7 +158,6 @@ from app.mcp.factory import (
 )
 
 
-
 #
 # Usage
 #
@@ -178,7 +171,6 @@ from app.usage.calculator import (
 )
 
 
-
 #
 # Audit
 #
@@ -186,7 +178,6 @@ from app.usage.calculator import (
 from app.audit.logger import (
     AuditLogger,
 )
-
 
 
 #
@@ -210,7 +201,6 @@ from app.security.budget import (
 )
 
 
-
 #
 # Runtime
 #
@@ -222,7 +212,6 @@ from app.runtime.runtime import (
 from app.runtime.executor.tool_calling_executor import (
     ToolCallingExecutor,
 )
-
 
 
 #
@@ -254,7 +243,6 @@ from app.agents.supervisor import (
 )
 
 
-
 #
 # Runtime Steps
 #
@@ -276,7 +264,6 @@ from app.runtime.steps.governance_step import (
 )
 
 
-
 #
 # Planning
 #
@@ -294,7 +281,6 @@ from app.planning.workflow_builder import (
 )
 
 
-
 #
 # Observability
 #
@@ -302,9 +288,6 @@ from app.planning.workflow_builder import (
 from app.observability import (
     tracer,
 )
-
-
-
 
 
 class Container:
@@ -315,11 +298,7 @@ class Container:
     platform components.
     """
 
-
-
     def __init__(self) -> None:
-
-
 
         #
         # Memory
@@ -329,20 +308,17 @@ class Container:
             FileMemoryStore()
         )
 
-
         self.conversation_repository = (
             FileConversationRepository(
                 self.memory_store
             )
         )
 
-
         self.user_memory_repository = (
             FileUserMemoryRepository(
                 self.memory_store
             )
         )
-
 
         self.memory_manager = MemoryManager(
 
@@ -354,8 +330,6 @@ class Container:
 
         )
 
-
-
         #
         # Context
         #
@@ -364,20 +338,15 @@ class Container:
             max_messages=20
         )
 
-
         self.context_builder = ContextBuilder(
             context_window=self.context_window
         )
-
-
 
         #
         # Audit
         #
 
         self.audit_logger = AuditLogger()
-
-
 
         #
         # LLM
@@ -386,7 +355,6 @@ class Container:
         self.qwen = QwenLLM()
 
         self.fake = FakeLLM()
-
 
         self.model_router = ModelRouter(
 
@@ -402,14 +370,11 @@ class Container:
 
         )
 
-
-
         #
         # Usage
         #
 
         self.cost_calculator = CostCalculator()
-
 
         self.usage_tracker = UsageTracker(
 
@@ -417,8 +382,6 @@ class Container:
                 self.cost_calculator
 
         )
-
-
 
         #
         # Security
@@ -428,11 +391,9 @@ class Container:
             PermissionChecker()
         )
 
-
         self.token_estimator = (
             TokenEstimator()
         )
-
 
         self.quota_checker = QuotaChecker(
 
@@ -441,15 +402,12 @@ class Container:
 
         )
 
-
         self.budget_checker = BudgetChecker(
 
             usage_tracker=
                 self.usage_tracker
 
         )
-
-
 
         #
         # Governance
@@ -474,8 +432,6 @@ class Container:
 
         )
 
-
-
         #
         # Gateway
         #
@@ -490,15 +446,11 @@ class Container:
 
         )
 
-
-
         #
         # Prompt
         #
 
         self.prompt_builder = PromptBuilder()
-
-
 
         #
         # Knowledge
@@ -514,22 +466,17 @@ class Container:
 
         )
 
-
-
         #
         # Tools
         #
 
         self.tool_registry = ToolRegistry()
 
-
         self.tool_registry.register(
 
             CalculatorTool()
 
         )
-
-
 
         #
         # MCP
@@ -541,13 +488,11 @@ class Container:
 
         )
 
-
         self.mcp_server = MCPServer(
 
             self.mcp_adapter
 
         )
-
 
         self.mcp_bridge = create_mcp_bridge(
 
@@ -561,8 +506,6 @@ class Container:
 
         )
 
-
-
         #
         # Domain Repositories
         #
@@ -571,11 +514,9 @@ class Container:
             InMemoryCustomerRepository()
         )
 
-
         self.ticket_repository = (
             InMemoryTicketRepository()
         )
-
 
         self.customer_service = CustomerService(
 
@@ -583,7 +524,6 @@ class Container:
                 self.customer_repository,
 
         )
-
 
         self.ticket_service = TicketService(
 
@@ -598,8 +538,6 @@ class Container:
 
         self.workflow_engine = WorkflowEngine()
 
-
-
         #
         # Workflow Executors
         #
@@ -611,7 +549,6 @@ class Container:
             TicketValidationExecutor(),
 
         )
-
 
         self.workflow_engine.register_executor(
 
@@ -625,7 +562,6 @@ class Container:
 
         )
 
-
         self.workflow_engine.register_executor(
 
             "response",
@@ -634,14 +570,11 @@ class Container:
 
         )
 
-
-
         #
         # Workflow Registry
         #
 
         self.workflow_registry = WorkflowRegistry()
-
 
         self.workflow_registry.register(
 
@@ -649,14 +582,11 @@ class Container:
 
         )
 
-
         self.workflow_registry.register(
 
             ResolveTicketWorkflow()
 
         )
-
-
 
         #
         # Runtime Steps
@@ -667,8 +597,6 @@ class Container:
             self.knowledge_base
 
         )
-
-
 
         self.llm_step = LLMStep(
 
@@ -683,8 +611,6 @@ class Container:
 
         )
 
-
-
         self.tool_step = ToolStep(
 
             tool_registry=
@@ -694,8 +620,6 @@ class Container:
                 self.permission_checker,
 
         )
-
-
 
         #
         # Tool Calling Executor
@@ -714,15 +638,11 @@ class Container:
 
         )
 
-
-
         #
         # Agent Lifecycle Executor
         #
 
         self.agent_executor = AgentExecutor()
-
-
 
         #
         # Agents
@@ -738,8 +658,6 @@ class Container:
 
         )
 
-
-
         self.tool_agent = ToolAgent(
 
             tool_calling_executor=
@@ -747,25 +665,21 @@ class Container:
 
         )
 
-
-
         self.customer_service_agent = CustomerServiceAgent(
 
             workflow_engine=
                 self.workflow_engine,
-
 
             workflow_registry=
                 self.workflow_registry,
 
             customer_service=
                 self.customer_service,
+
             ticket_service=
                 self.ticket_service,
 
         )
-
-
 
         #
         # Agent Registry
@@ -773,14 +687,11 @@ class Container:
 
         self.agent_registry = AgentRegistry()
 
-
-
         self.agent_registry.register(
 
             self.knowledge_agent
 
         )
-
 
         self.agent_registry.register(
 
@@ -788,14 +699,11 @@ class Container:
 
         )
 
-
         self.agent_registry.register(
 
             self.customer_service_agent
 
         )
-
-
 
         #
         # Agent Workflow Executor
@@ -803,11 +711,11 @@ class Container:
 
         self.agent_workflow_executor = AgentWorkflowExecutor(
 
-            self.agent_registry
+            self.agent_registry,
+
+            self.agent_executor,
 
         )
-
-
 
         self.workflow_engine.register_executor(
 
@@ -817,7 +725,6 @@ class Container:
 
         )
 
-
         self.workflow_engine.register_executor(
 
             "knowledge",
@@ -825,8 +732,6 @@ class Container:
             self.agent_workflow_executor,
 
         )
-
-
 
         #
         # Supervisor
@@ -839,18 +744,13 @@ class Container:
 
         )
 
-
-
         #
         # Planning
         #
 
         self.workflow_builder = WorkflowBuilder()
 
-
         self.planner = SimplePlanner()
-
-
 
         self.plan_executor = PlanExecutor(
 
@@ -861,8 +761,6 @@ class Container:
                 self.workflow_builder,
 
         )
-
-
 
         #
         # Runtime
