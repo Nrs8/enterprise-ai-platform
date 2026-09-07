@@ -1,4 +1,3 @@
-
 """
 Enterprise AI Platform application entry point.
 """
@@ -11,6 +10,9 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI
 
+from app.api.audit import (
+    router as audit_router,
+)
 from app.api.chat import (
     router as chat_router,
 )
@@ -145,3 +147,6 @@ app.include_router(
     tickets_router
 )
 
+app.include_router(
+    audit_router
+)
