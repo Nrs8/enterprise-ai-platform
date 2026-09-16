@@ -1,0 +1,12 @@
+services:
+  enterprise-ai-platform:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: enterprise-ai-platform:latest
+    container_name: enterprise-ai-platform
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped

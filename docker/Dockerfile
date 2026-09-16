@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 COPY knowledge ./knowledge
+COPY knowledge_data ./knowledge_data
 
 RUN mkdir -p /app/app/evaluation/reports \
     && useradd --create-home --shell /bin/bash appuser \

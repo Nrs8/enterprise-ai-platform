@@ -17,8 +17,6 @@ data/
 
 tests/
 
-knowledge_data/
-
 docs/
 
 Dockerfile*
