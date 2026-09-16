@@ -52,6 +52,7 @@ class PromptBuilder:
     - Memory injection
     - Conversation history
     - Knowledge injection
+    - Current user input
     - Runtime messages
 
 
@@ -262,6 +263,27 @@ class PromptBuilder:
 
 
         #
+        # Current User Input
+        #
+        # The current request may not yet exist
+        # in persistent history or runtime messages.
+        #
+
+        if context.input:
+
+            messages.append(
+
+                LLMMessage(
+
+                    role="user",
+
+                    content=context.input,
+
+                )
+
+            )
+
+
         # Runtime Messages
         #
         # Used by:

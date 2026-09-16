@@ -11,10 +11,10 @@ from app.config import settings
 from app.llm.providers.base import BaseLLM
 from app.llm.models import (
     LLMResponse,
+    Message,
     TokenUsage,
     ToolCall,
 )
-from app.memory.models import Message
 
 
 class QwenLLM(BaseLLM):

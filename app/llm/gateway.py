@@ -6,10 +6,12 @@ import logging
 import time
 from uuid import uuid4
 
-from app.memory.models import Message
+from app.llm.models import (
+    LLMResponse,
+    Message,
+)
 from app.observability.metrics import metrics
 
-from app.llm.models import LLMResponse
 from app.llm.router import ModelRouter
 
 from app.resilience.retry import retry

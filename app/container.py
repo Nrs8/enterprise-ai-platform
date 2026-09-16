@@ -127,6 +127,22 @@ from knowledge.knowledge_base import (
     KnowledgeBase,
 )
 
+from knowledge.document_loader import (
+    DocumentLoader,
+)
+
+from knowledge.chunker import (
+    TextChunker,
+)
+
+from knowledge.ingestion import (
+    KnowledgeIngestion,
+)
+
+from knowledge.retriever import (
+    Retriever,
+)
+
 
 #
 # Tools
@@ -466,6 +482,45 @@ class Container:
 
         )
 
+        self.document_loader = DocumentLoader()
+
+        self.chunker = TextChunker()
+
+        self.knowledge_ingestion = KnowledgeIngestion(
+
+            document_loader=
+                self.document_loader,
+
+            chunker=
+                self.chunker,
+
+        )
+
+        documents = self.document_loader.load_directory(
+            "knowledge_data/documents"
+        )
+
+        for document in documents:
+
+            chunks = self.chunker.split(
+                document
+            )
+
+            self.knowledge_base.add_document(
+
+                document=document,
+
+                chunks=chunks,
+
+            )
+
+        self.retriever = Retriever(
+
+            knowledge_base=
+                self.knowledge_base,
+
+        )
+
         #
         # Tools
         #
@@ -594,7 +649,7 @@ class Container:
 
         self.retrieve_step = RetrieveStep(
 
-            self.knowledge_base
+            self.retriever
 
         )
 
