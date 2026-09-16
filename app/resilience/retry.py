@@ -40,10 +40,7 @@ async def retry(
     server-side errors.
     """
 
-    attempts = max(
-        1,
-        settings.retry_count,
-    )
+    attempts = settings.retry_count + 1
 
     last_exception = None
 

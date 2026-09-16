@@ -13,7 +13,6 @@ class TaskStatus(str, Enum):
     FAILED = "failed"
 
 
-
 @dataclass
 class Task:
     """
@@ -28,6 +27,10 @@ class Task:
 
     # Selected LLM provider/model
     model: str = "qwen"
+
+    user_id: str = "anonymous"
+
+    tenant_id: str = "default"
 
     status: TaskStatus = TaskStatus.PENDING
 

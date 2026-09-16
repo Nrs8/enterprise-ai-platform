@@ -22,7 +22,6 @@ class TaskWorker:
         self._worker_id = worker_id
         self._tracer = tracer
 
-
     async def run(self) -> None:
 
         while True:
@@ -34,9 +33,7 @@ class TaskWorker:
                 },
             )
 
-
             task = await self._task_queue.dequeue()
-
 
             logger.info(
                 "Task received",
@@ -45,7 +42,6 @@ class TaskWorker:
                     "task_id": task.id,
                 },
             )
-
 
             trace = self._tracer.start_trace()
 
@@ -64,14 +60,11 @@ class TaskWorker:
                         task
                     )
 
-
                 metrics.increment(
                     "tasks_processed"
                 )
 
-
             except Exception:
-
                 logger.exception(
                     "Task execution failed",
                     extra={
@@ -80,13 +73,9 @@ class TaskWorker:
                     },
                 )
 
-
                 metrics.increment(
                     "tasks_failed"
                 )
-
-                raise
-
 
             finally:
 

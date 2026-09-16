@@ -110,7 +110,7 @@ async def chat(
 
         container.memory_manager.create_conversation(
             session_id=session_id,
-            user_id="enterprise_user",
+            user_id=request.user_id,
         )
 
     try:
@@ -119,8 +119,8 @@ async def chat(
             session_id=session_id,
             message=request.message,
             model=request.model,
-            user_id="enterprise_user",
-            tenant_id="default",
+            user_id=request.user_id,
+            tenant_id=request.tenant_id,
         )
 
         return {
