@@ -5,6 +5,7 @@ from typing import Callable, Any
 from app.config.settings import settings
 from app.resilience.timeout import timeout
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,17 +22,17 @@ async def retry(
     last_exception = None
 
     retries = settings.retry_count
+    timeout_seconds = settings.llm_timeout
 
     for attempt in range(1, retries + 1):
 
         try:
-
             return await timeout(
                 func,
                 *args,
+                seconds=timeout_seconds,
                 **kwargs,
             )
-
 
         except Exception as e:
 
@@ -46,7 +47,6 @@ async def retry(
 
             if attempt < retries:
                 await asyncio.sleep(delay)
-
 
     logger.error(
         "All retry attempts failed: %s",
