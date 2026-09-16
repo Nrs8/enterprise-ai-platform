@@ -33,27 +33,21 @@ class Settings:
 
 
         # Reliability
-        self.llm_timeout = int(
-            os.getenv(
-                "LLM_TIMEOUT",
-                "10"
-            )
+        self.llm_timeout = self._get_int(
+            "LLM_TIMEOUT",
+            10
         )
 
-        self.retry_count = int(
-            os.getenv(
-                "RETRY_COUNT",
-                "3"
-            )
+        self.retry_count = self._get_int(
+            "RETRY_COUNT",
+            3
         )
 
 
         # Runtime
-        self.worker_count = int(
-            os.getenv(
-                "WORKER_COUNT",
-                "3"
-            )
+        self.worker_count = self._get_int(
+            "WORKER_COUNT",
+            3
         )
 
         self.environment = os.getenv(
@@ -63,6 +57,26 @@ class Settings:
 
 
         self._validate()
+
+
+    def _get_int(
+        self,
+        name: str,
+        default: int
+    ) -> int:
+
+        value = os.getenv(
+            name,
+            str(default)
+        )
+
+        try:
+            return int(value)
+
+        except ValueError as exc:
+            raise ConfigurationError(
+                f"{name} must be an integer"
+            ) from exc
 
 
     def _validate(self):
@@ -80,6 +94,21 @@ class Settings:
         if not self.model:
             raise ConfigurationError(
                 "QWEN_MODEL is missing"
+            )
+
+        if self.llm_timeout <= 0:
+            raise ConfigurationError(
+                "LLM_TIMEOUT must be greater than 0"
+            )
+
+        if self.retry_count < 0:
+            raise ConfigurationError(
+                "RETRY_COUNT must be greater than or equal to 0"
+            )
+
+        if self.worker_count <= 0:
+            raise ConfigurationError(
+                "WORKER_COUNT must be greater than 0"
             )
 
 
