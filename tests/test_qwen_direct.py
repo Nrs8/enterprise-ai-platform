@@ -1,21 +1,29 @@
 import asyncio
+import os
+
 from openai import AsyncOpenAI
 
 
-client = AsyncOpenAI(
-    api_key="sk-ws-H.EMPMDIX.2pUn.MEQCIDmOk0fCmA9ikofru_EmS_vEFsA_7QzbYpxe4F9Uayq1AiBwR3ItuQa6Cl0tB6ULitNX-xd2m-cvnIT_HR3rBKYK9A",
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-)
-
-
 async def main():
+    api_key = os.getenv("DASHSCOPE_API_KEY")
+
+    if not api_key:
+        raise RuntimeError("DASHSCOPE_API_KEY is not set")
+
+    client = AsyncOpenAI(
+        api_key=api_key,
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+    )
 
     response = await client.chat.completions.create(
         model="qwen-plus",
         messages=[
             {
                 "role": "user",
-                "content": "Please explain the architecture of a production-grade Enterprise AI Agent platform in detail"
+                "content": (
+                    "Please explain the architecture of a production-grade "
+                    "Enterprise AI Agent platform in detail"
+                ),
             }
         ],
     )
@@ -23,4 +31,5 @@ async def main():
     print(response.choices[0].message.content)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
