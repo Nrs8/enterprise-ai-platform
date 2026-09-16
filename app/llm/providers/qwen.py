@@ -4,6 +4,7 @@ Qwen LLM provider implementation.
 
 import json
 
+import httpx
 from openai import AsyncOpenAI
 
 from app.config import settings
@@ -26,13 +27,17 @@ class QwenLLM(BaseLLM):
         Initialize Qwen client.
         """
 
+        http_client = httpx.AsyncClient(
+            trust_env=False,
+        )
+
         self.client = AsyncOpenAI(
             api_key=settings.api_key,
             base_url=settings.base_url,
+            http_client=http_client,
         )
 
         self.model = settings.model
-
 
     async def generate(
         self,
@@ -62,7 +67,6 @@ class QwenLLM(BaseLLM):
                 "content": message.content,
             }
 
-
             if message.tool_calls:
 
                 qwen_message["tool_calls"] = [
@@ -79,39 +83,31 @@ class QwenLLM(BaseLLM):
                     for tool_call in message.tool_calls
                 ]
 
-
             if message.tool_call_id:
 
                 qwen_message["tool_call_id"] = (
                     message.tool_call_id
                 )
 
-
             qwen_messages.append(
                 qwen_message
             )
-
 
         request_kwargs = {
             "model": self.model,
             "messages": qwen_messages,
         }
 
-
         if tools:
             request_kwargs["tools"] = tools
-
 
         response = await self.client.chat.completions.create(
             **request_kwargs
         )
 
-
         message = response.choices[0].message
 
-
         tool_calls: list[ToolCall] = []
-
 
         if message.tool_calls:
 
@@ -127,7 +123,6 @@ class QwenLLM(BaseLLM):
                     )
                 )
 
-
         usage = None
 
         if response.usage:
@@ -137,19 +132,14 @@ class QwenLLM(BaseLLM):
                 output_tokens=response.usage.completion_tokens,
             )
 
-
         return LLMResponse(
             content=message.content,
-
             tool_calls=(
                 tool_calls
                 if tool_calls
                 else None
             ),
-
             model=self.model,
-
             provider="qwen",
-
             usage=usage,
         )
