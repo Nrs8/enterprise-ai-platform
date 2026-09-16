@@ -5,18 +5,17 @@ Raised when AI governance policies
 block a request.
 """
 
+from app.runtime.errors.exceptions import (
+    AuthorizationError,
+)
 
 
-
-class SecurityError(Exception):
+class SecurityError(AuthorizationError):
     """
     Base security exception.
     """
 
     pass
-
-
-
 
 
 class AIForbiddenError(SecurityError):
@@ -25,10 +24,7 @@ class AIForbiddenError(SecurityError):
     requested AI resource.
     """
 
-    pass
-
-
-
+    code = "ai_forbidden"
 
 
 class AIQuotaExceededError(SecurityError):
@@ -36,10 +32,7 @@ class AIQuotaExceededError(SecurityError):
     Token quota exceeded.
     """
 
-    pass
-
-
-
+    code = "ai_quota_exceeded"
 
 
 class AIBudgetExceededError(SecurityError):
@@ -47,4 +40,4 @@ class AIBudgetExceededError(SecurityError):
     AI spending budget exceeded.
     """
 
-    pass
+    code = "ai_budget_exceeded"

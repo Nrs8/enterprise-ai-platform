@@ -36,6 +36,16 @@ class RuntimeErrorBase(Exception):
         super().__init__(message)
 
 
+class AuthorizationError(RuntimeErrorBase):
+    """
+    Authorization and governance failure.
+    """
+
+    category = ErrorCategory.AUTHORIZATION
+
+    code = "authorization_failed"
+
+
 class ToolExecutionError(RuntimeErrorBase):
     """
     Tool execution failure.

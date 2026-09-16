@@ -34,6 +34,7 @@ from app.api.tickets import (
 from app.api.usage import (
     router as usage_router,
 )
+from app.config import settings
 from app.container import (
     Container,
 )
@@ -83,8 +84,9 @@ async def lifespan(
     #
 
     application.state.workers = []
+    application.state.worker_tasks = []
 
-    worker_count = 3
+    worker_count = settings.worker_count
 
     for worker_id in range(worker_count):
         worker = TaskWorker(
@@ -96,11 +98,29 @@ async def lifespan(
 
         application.state.workers.append(worker)
 
-        asyncio.create_task(
+        worker_task = asyncio.create_task(
             worker.run()
         )
 
-    yield
+        application.state.worker_tasks.append(
+            worker_task
+        )
+
+    try:
+        yield
+
+    finally:
+        #
+        # Stop background workers
+        #
+
+        for worker_task in application.state.worker_tasks:
+            worker_task.cancel()
+
+        await asyncio.gather(
+            *application.state.worker_tasks,
+            return_exceptions=True,
+        )
 
 
 app = FastAPI(

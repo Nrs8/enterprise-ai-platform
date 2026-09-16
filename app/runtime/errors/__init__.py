@@ -17,6 +17,7 @@ from app.runtime.errors.models import (
 
 from app.runtime.errors.exceptions import (
     RuntimeErrorBase,
+    AuthorizationError,
     ToolExecutionError,
     LLMExecutionError,
     MemoryError,
@@ -29,7 +30,6 @@ from app.runtime.errors.handler import (
 )
 
 
-
 __all__ = [
 
     "ErrorCategory",
@@ -37,6 +37,8 @@ __all__ = [
     "RuntimeErrorInfo",
 
     "RuntimeErrorBase",
+
+    "AuthorizationError",
 
     "ToolExecutionError",
 

@@ -2,11 +2,28 @@ import asyncio
 import logging
 from typing import Callable, Any
 
+from openai import (
+    APIConnectionError,
+    APITimeoutError,
+    InternalServerError,
+    RateLimitError,
+)
+
 from app.config.settings import settings
+from app.resilience.exceptions import LLMError
 from app.resilience.timeout import timeout
 
 
 logger = logging.getLogger(__name__)
+
+
+RETRYABLE_EXCEPTIONS = (
+    APIConnectionError,
+    APITimeoutError,
+    InternalServerError,
+    RateLimitError,
+    LLMError,
+)
 
 
 async def retry(
@@ -17,40 +34,51 @@ async def retry(
 ) -> Any:
     """
     Async retry wrapper.
+
+    Retries only transient LLM failures such as
+    connection errors, timeouts, rate limits, and
+    server-side errors.
     """
+
+    attempts = max(
+        1,
+        settings.retry_count,
+    )
 
     last_exception = None
 
-    retries = settings.retry_count
-    timeout_seconds = settings.llm_timeout
-
-    for attempt in range(1, retries + 1):
+    for attempt in range(1, attempts + 1):
 
         try:
             return await timeout(
                 func,
                 *args,
-                seconds=timeout_seconds,
+                seconds=settings.llm_timeout,
                 **kwargs,
             )
 
-        except Exception as e:
+        except RETRYABLE_EXCEPTIONS as exc:
 
-            last_exception = e
+            last_exception = exc
 
             logger.warning(
-                "Retry attempt %s/%s failed: %s",
+                "Retryable LLM failure "
+                "attempt %s/%s: %s: %s",
                 attempt,
-                retries,
-                e,
+                attempts,
+                type(exc).__name__,
+                exc,
             )
 
-            if attempt < retries:
+            if attempt < attempts:
                 await asyncio.sleep(delay)
 
+        except Exception:
+            raise
+
     logger.error(
-        "All retry attempts failed: %s",
-        retries,
+        "All LLM retry attempts failed: %s",
+        attempts,
     )
 
     raise last_exception
