@@ -1,62 +1,105 @@
-\# Enterprise AI Agent Platform
+# Enterprise AI Agent Platform — Project Context
 
+## Goal
 
+Build a production-oriented Enterprise AI Agent Platform that demonstrates practical AI engineering and platform architecture.
 
-\## Goal
+The project is intended to demonstrate:
 
-\##这个文件以后每次新聊天都可以直接发
+- AI agent orchestration
+- LLM infrastructure
+- enterprise governance
+- tool and MCP integration
+- memory and RAG
+- asynchronous execution
+- reliability
+- observability
+- domain integration
+- containerized deployment
 
-\## Target Roles
+## Target Roles
 
+- AI Engineer
+- Enterprise AI Platform Engineer
+- AI Application Engineer
+- AI Architect
 
+## Design Philosophy
 
-\## Design Philosophy
+The project favors a modular monolith with explicit boundaries over premature distributed-system complexity.
 
+The system should remain understandable, testable, and deployable on local hardware while preserving interfaces that can later support distributed infrastructure.
 
+## Architecture Principles
 
-\## Architecture Principles
+- Separation of Concerns
+- SOLID
+- Dependency Inversion
+- Dependency Injection
+- Explicit interfaces
+- Layered architecture
+- Testability
+- Production-first engineering
+- Incremental evolution
+- Failure isolation
 
+## Runtime Principle
 
+The runtime is the orchestration layer.
 
-\- Clean Architecture
+It coordinates:
 
-\- SOLID
+- request context
+- governance
+- memory
+- supervisor routing
+- planning
+- workflow execution
+- agent execution
 
-\- Dependency Injection
+The runtime should not contain business-specific domain logic or directly implement provider-specific LLM behavior.
 
-\- Production First
+## Responsibility Boundaries
 
-\- Testability
+### Runtime
 
+Coordinates execution.
 
+### Agents
 
-\## Teaching Style
+Perform agent-specific reasoning and behavior.
 
+### LLM Gateway
 
+Provides an abstraction over LLM providers.
 
-Principal AI Architect
+### Providers
 
+Handle provider-specific API communication.
 
+### Domain Services
 
-One sprint at a time
+Own customer and ticket business logic.
 
+### Security
 
+Owns permission, policy, quota, budget and token governance.
 
-Always specify
+### Infrastructure
 
+Provides memory, MCP, tools, observability, resilience and persistence mechanisms.
 
+## Teaching / Development Style
 
-\- File
+The project is developed using a Principal AI Architect mindset.
 
-\- Action
+For changes:
 
-\- Reason
-
-
-
-Never assume interfaces.
-
-
-
-Always review existing code first.
-
+1. Review existing code first.
+2. Identify the exact boundary affected.
+3. Specify the file to change.
+4. Specify the action.
+5. Explain the reason.
+6. Avoid unnecessary rearchitecture.
+7. Preserve existing interfaces unless a change is justified.
+8. Add regression coverage for important behavior.
